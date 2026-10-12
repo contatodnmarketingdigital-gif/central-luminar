@@ -63,6 +63,31 @@ textarea:focus{outline:none;border-color:var(--gold2)}
 .pill.ok{background:#1d4a34;color:var(--ok)} .pill.wait{background:#4a3c1a;color:var(--wait)} .pill.bad{background:#4a1d1d;color:var(--bad)}
 .empty{font-size:13px;color:var(--muted);padding:8px}
 
+/* hoje: painel "agora" + aprovação passo a passo */
+.readonly{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:#3a2e12;border:1px solid #5a4a22;border-radius:14px;padding:12px 16px;font-size:14px}
+.now{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.nowbox{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.nowbox.you{border-color:#5a4a22;background:linear-gradient(160deg,#2a2410,var(--card))}
+.nowbox.block{border-color:#5a2a2a}
+.nowbox .n{font-family:var(--display);font-size:34px;line-height:1}
+.nowbox ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.nowbox li{display:flex;gap:8px;align-items:flex-start}
+.nowbox li i{flex:none;width:8px;height:8px;border-radius:50%;margin-top:6px;background:var(--ok)}
+.nowbox.block li i{background:var(--bad)}
+.who-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.ap.big{border-width:2px}
+.ap .stepno{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.ap .decide{background:#2a2410;border:1px solid #5a4a22;border-radius:12px;padding:12px 14px;font-size:14.5px}
+.ap .decide b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+.bigacts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.bigacts .btn{padding:11px 8px;font-size:14px;font-weight:600;text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn.wa{background:#12382a;border-color:#25d366;color:#c9f7da}
+.btn.com{background:var(--sink)}
+.coms{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.coms div{background:var(--sink);border-radius:9px;padding:7px 10px}
+.coms small{color:var(--muted);font-family:var(--mono);font-size:10.5px}
+@media (max-width:820px){.now{grid-template-columns:1fr}.bigacts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
 /* equipe */
 .nucleo{margin-bottom:18px}
 .nucleo > .eyebrow{display:block;margin-bottom:8px}
@@ -175,7 +200,10 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);paddin
 
 <!-- HOJE -->
 <section data-pane="hoje">
-  <div class="head"><p class="eyebrow">Precisa de você</p><h2>Caixa de aprovação</h2><p class="muted" style="font-size:13.5px">Cada item mostra a peça e o que está sendo pedido. <b>Aprovar</b> libera para a próxima etapa. <b>Pedir ajuste</b> abre um campo para você dizer o que mudar; o pedido vira tarefa para a equipe na hora.</p></div>
+  <div class="readonly" id="ro" hidden><span><b>Esta é a versão só de leitura.</b> Os botões de aprovar ficam na Central ao vivo.</span><a class="btn primary" style="text-decoration:none" href="https://claude.ai/artifact/7Rhm3WSD35SCi276me9d4Y">Abrir a Central para aprovar →</a></div>
+  <div class="now" id="now"></div>
+  <div class="head"><p class="eyebrow">Precisa de você</p><h2>Caixa de aprovação</h2><p class="muted" style="font-size:13.5px">Um item por vez, na ordem. Veja a peça, leia <b>o que decidir</b> e toque num dos botões: <b>✅ Aprovar</b> libera para a próxima etapa · <b>✏️ Pedir ajuste</b> devolve para a equipe com o seu texto · <b>💬 Comentar</b> deixa uma observação sem decidir · <b>📲 WhatsApp</b> manda o aviso deste item para o seu WhatsApp.</p></div>
+  <div class="who-tabs" id="whotabs"></div>
   <div class="inbox" id="inbox"><p class="empty">Carregando aprovações…</p></div>
   <div class="head" style="margin-top:26px"><p class="eyebrow">Caminho crítico</p><h2 id="c-nome">Campanha</h2><p class="muted" id="c-diag"></p></div>
   <ol class="steps" id="steps"></ol>
@@ -247,7 +275,7 @@ const CHECK=[
  ["Regras e subida",[["r1","Passou na Revisão (conselho, Meta, posicionamento)"],["r2","Sem preço, número de pacientes, prazo ou \"encha\""],["r3","Nome no padrão [AC][VENDAS] e link com UTM do anúncio"],["r4","Aprovado pela Delaine"]]]
 ];
 const NCHECK=CHECK.reduce((n,g)=>n+g[1].length,0);
-let db=null,sample=null,STATIC=false,tasks=[],agents=[],ads=[],aprov=[],kpiList=[],lastMeta=null,open=null,adjusting=null;
+let db=null,sample=null,STATIC=false,tasks=[],agents=[],ads=[],aprov=[],kpiList=[],lastMeta=null,open=null,adjusting=null,commenting=null,whoFilter="Delaine";
 
 /* abas */
 function showTab(t){document.querySelectorAll("[data-tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));document.querySelectorAll("[data-pane]").forEach(p=>p.hidden=p.dataset.pane!==t);try{localStorage.setItem("central-tab",t);}catch(_){}}
@@ -267,17 +295,35 @@ function detail(nome){const a=agents.find(x=>x.nome===nome)||{};const s=stateOf(
 
 /* aprovações */
 function mediaHtml(m){if(!m||!m.length)return"";return `<div class="media">${m.map(x=>STATIC?`<div class="ask">Veja a peça na <a href="${LIVE}" style="color:var(--gold)">Central ao vivo</a>.</div>`:x.tipo==="video"?`<video src="${esc(x.url)}" controls preload="metadata" playsinline></video>`:`<img src="${esc(x.url)}" alt="${esc(x.alt||"Peça para aprovar")}" loading="lazy">`).slice(0,STATIC?1:9).join("")}</div>`;}
-function apCard(a){const done=a.status!=="pendente";const pill=a.status==="aprovado"?'<span class="pill ok">aprovado</span>':a.status==="ajuste"?'<span class="pill bad">ajuste pedido</span>':`<span class="pill wait">para ${esc(a.para||"Delaine")}</span>`;
- return `<article class="ap ${done?"done":""}"><div class="row"><div><span class="from">${esc(a.agente||"")} pede</span><h3>${esc(a.titulo)}</h3></div>${pill}</div>
+function waLink(a){const n=(lastMeta&&lastMeta.whatsapp||"").replace(/\D/g,"");if(!n)return "";const t=`*Central Luminar · aprovação pendente*\n\n*${a.titulo}*\nQuem pede: ${a.agente||"Equipe"} · para ${a.para||"Delaine"}\n\nO que decidir: ${a.pergunta||a.descricao||""}\n\nAbrir e aprovar: ${LIVE}`;return "https://wa.me/"+n+"?text="+encodeURIComponent(t);}
+function apCard(a,i,total){const done=a.status!=="pendente";const pill=a.status==="aprovado"?'<span class="pill ok">aprovado</span>':a.status==="ajuste"?'<span class="pill bad">ajuste pedido</span>':`<span class="pill wait">para ${esc(a.para||"Delaine")}</span>`;
+ const coms=(a.comentarios||[]).map(c=>`<div>${esc(c.texto)} <small>${esc((c.quando||"").slice(0,16).replace("T"," "))}</small></div>`).join("");
+ const wa=waLink(a);
+ let acts="";
+ if(!done){
+  if(STATIC) acts=`<div class="bigacts"><a class="btn ok" href="${LIVE}">✅ Aprovar</a><a class="btn adj" href="${LIVE}">✏️ Pedir ajuste</a><a class="btn com" href="${LIVE}">💬 Comentar</a></div>`;
+  else if(adjusting===a.id||commenting===a.id){const isAdj=adjusting===a.id;acts=`<label class="lbl" for="txt-${esc(a.id)}">${isAdj?"O que mudar? (vira tarefa para a equipe)":"Seu comentário (não aprova nem reprova)"}</label><textarea id="txt-${esc(a.id)}" placeholder="${isAdj?"Ex.: trocar a frase final por…":"Ex.: gostei, mas quero ver com outra foto"}"></textarea><div class="acts"><button class="btn ${isAdj?"adj":"primary"}" data-send-txt="${esc(a.id)}" data-kind="${isAdj?"adj":"com"}">${isAdj?"Enviar ajuste":"Salvar comentário"}</button><button class="btn" data-cancel-adj>Cancelar</button></div>`;}
+  else acts=`<div class="bigacts">${(a.opcoes&&a.opcoes.length?a.opcoes.map(o=>`<button class="btn ok" data-ok="${esc(a.id)}" data-op="${esc(o)}">✅ ${esc(o)}</button>`).join(""):`<button class="btn ok" data-ok="${esc(a.id)}">✅ Aprovar</button>`)}<button class="btn adj" data-adj="${esc(a.id)}">✏️ Pedir ajuste</button><button class="btn com" data-com="${esc(a.id)}">💬 Comentar</button>${wa?`<a class="btn wa" href="${esc(wa)}" target="_blank" rel="noopener">📲 WhatsApp</a>`:""}</div>`;
+ }
+ return `<article class="ap ${done?"done":"big"}"><div class="row"><div>${!done&&total?`<span class="stepno">${i+1} de ${total}</span><br>`:""}<span class="from">${esc(a.agente||"")} pede</span><h3>${esc(a.titulo)}</h3></div>${pill}</div>
  ${a.descricao?`<p class="desc">${esc(a.descricao)}</p>`:""}${mediaHtml(a.midia)}
- ${a.pergunta?`<div class="ask"><b>O que aprovar:</b> ${esc(a.pergunta)}</div>`:""}
- ${done?`<p class="muted" style="font-size:13px">${a.status==="aprovado"?"Aprovado":"Ajuste pedido"}${a.decisao?": "+esc(a.decisao):""}${a.comentario?` — "${esc(a.comentario)}"`:""}</p>`:STATIC?"":(adjusting===a.id?`<label class="lbl" for="adj-${esc(a.id)}">O que mudar?</label><textarea id="adj-${esc(a.id)}" placeholder="Ex.: trocar a frase final por…"></textarea><div class="acts"><button class="btn adj" data-send-adj="${esc(a.id)}">Enviar ajuste</button><button class="btn" data-cancel-adj>Cancelar</button></div>`:
-   `<div class="acts">${(a.opcoes&&a.opcoes.length?a.opcoes.map(o=>`<button class="btn ok" data-ok="${esc(a.id)}" data-op="${esc(o)}">${esc(o)}</button>`).join(""):`<button class="btn ok" data-ok="${esc(a.id)}">Aprovar</button>`)}<button class="btn adj" data-adj="${esc(a.id)}">Pedir ajuste</button></div>`)}
+ ${a.pergunta&&!done?`<div class="decide"><b>O que você decide</b>${esc(a.pergunta)}</div>`:""}
+ ${coms?`<div class="coms">${coms}</div>`:""}
+ ${done?`<p class="muted" style="font-size:13px">${a.status==="aprovado"?"Aprovado":"Ajuste pedido"}${a.decisao?": "+esc(a.decisao):""}${a.comentario?` — "${esc(a.comentario)}"`:""}</p>`:acts}
  </article>`;}
-function renderInbox(){const pend=aprov.filter(a=>a.status==="pendente").sort((x,y)=>(x.ordem||0)-(y.ordem||0));const dec=aprov.filter(a=>a.status!=="pendente");
- $("inbox").innerHTML=pend.length?pend.map(apCard).join(""):'<p class="empty">Nada esperando por você agora.</p>';
- $("decididas").innerHTML=dec.length?dec.map(apCard).join(""):'<p class="empty">Nenhuma ainda.</p>';
- const n=pend.filter(a=>(a.para||"Delaine")==="Delaine").length;$("badge").hidden=!n;$("badge").textContent=n;}
+function renderNow(){if(!$("now"))return;const pend=aprov.filter(a=>a.status==="pendente");const per=p=>pend.filter(a=>(a.para||"Delaine")===p).length;
+ const doing=tasks.filter(t=>t.status==="fazendo");const blocks=tasks.filter(t=>t.status!=="feito"&&/BLOQUEIO/i.test(t.titulo||""));
+ const li=t=>`<li><i></i><span><b>${esc(t.agente)}</b> · ${esc((t.titulo||"").replace(/^BLOQUEIO\s*·\s*/i,""))}</span></li>`;
+ $("now").innerHTML=`<div class="nowbox you"><span class="eyebrow">Precisa de você</span><span class="n num">${pend.length}</span><span class="muted" style="font-size:13px">${per("Delaine")} para a Delaine · ${per("Cláudio")} para o Cláudio</span></div>
+ <div class="nowbox"><span class="eyebrow">A equipe está fazendo agora</span>${doing.length?`<ul>${doing.slice(0,5).map(li).join("")}</ul>`:'<span class="muted" style="font-size:13px">Ninguém trabalhando agora.</span>'}</div>
+ <div class="nowbox block"><span class="eyebrow">Travando a campanha</span>${blocks.length?`<ul>${blocks.slice(0,4).map(li).join("")}</ul>`:'<span class="muted" style="font-size:13px">Nada travado. ✅</span>'}</div>`;}
+function renderInbox(){const all=aprov.filter(a=>a.status==="pendente").sort((x,y)=>(x.ordem||0)-(y.ordem||0));const dec=aprov.filter(a=>a.status!=="pendente");
+ const pessoas=["Delaine","Cláudio"];const cnt=p=>all.filter(a=>(a.para||"Delaine")===p).length;
+ $("whotabs").innerHTML=[...pessoas,"Todos"].map(p=>`<button class="tab" data-who="${p}" aria-selected="${whoFilter===p}">${p==="Todos"?"Todos":"Para "+p} <span class="num">${p==="Todos"?all.length:cnt(p)}</span></button>`).join("");
+ const pend=whoFilter==="Todos"?all:all.filter(a=>(a.para||"Delaine")===whoFilter);
+ $("inbox").innerHTML=pend.length?pend.map((a,i)=>apCard(a,i,pend.length)).join(""):'<p class="empty">Nada esperando aqui agora. ✅</p>';
+ $("decididas").innerHTML=dec.length?dec.map(a=>apCard(a)).join(""):'<p class="empty">Nenhuma ainda.</p>';
+ const n=cnt("Delaine");$("badge").hidden=!n;$("badge").textContent=n;$("ro").hidden=!STATIC;renderNow();}
 document.addEventListener("click",async e=>{
  const ag=e.target.closest("[data-ag]");if(ag){open=open===ag.dataset.ag?null:ag.dataset.ag;renderTeam();return;}
  const ok=e.target.closest("[data-ok]");if(ok&&db){ok.disabled=true;const a=aprov.find(x=>x.id===ok.dataset.ok);try{
@@ -285,13 +331,20 @@ document.addEventListener("click",async e=>{
    if(a.anuncio) await db.collection("anuncios").doc(a.anuncio).update({checks:{r4:true}});
    await db.collection("atividade").add({quando:new Date().toISOString(),agente:"Delaine",texto:"Aprovou: "+a.titulo+(ok.dataset.op?" ("+ok.dataset.op+")":"")});
   }catch(_){ok.disabled=false;$("conn").textContent="Não deu para salvar a aprovação. Tente de novo.";}return;}
- const adj=e.target.closest("[data-adj]");if(adj){adjusting=adj.dataset.adj;renderInbox();const t=$("adj-"+adjusting);t&&t.focus();return;}
- if(e.target.closest("[data-cancel-adj]")){adjusting=null;renderInbox();return;}
- const sa=e.target.closest("[data-send-adj]");if(sa&&db){const id=sa.dataset.sendAdj;const txt=($("adj-"+id)||{}).value||"";if(!txt.trim()){$("adj-"+id).focus();return;}sa.disabled=true;const a=aprov.find(x=>x.id===id);try{
-   await db.collection("aprovacoes").doc(id).update({status:"ajuste",comentario:txt.trim(),quando:new Date().toISOString()});
-   await db.collection("tarefas").add({titulo:"Ajuste pedido em \""+a.titulo+"\": "+txt.trim().slice(0,240),agente:a.agente||"Diretor",resp:"Claude",status:"afazer",criado:new Date().toISOString()});
-   adjusting=null;
-  }catch(_){sa.disabled=false;$("conn").textContent="Não deu para enviar o ajuste. Tente de novo.";}return;}
+ const who=e.target.closest("[data-who]");if(who){whoFilter=who.dataset.who;renderInbox();return;}
+ const adj=e.target.closest("[data-adj]");if(adj){adjusting=adj.dataset.adj;commenting=null;renderInbox();const t=$("txt-"+adjusting);t&&t.focus();return;}
+ const com=e.target.closest("[data-com]");if(com){commenting=com.dataset.com;adjusting=null;renderInbox();const t=$("txt-"+commenting);t&&t.focus();return;}
+ if(e.target.closest("[data-cancel-adj]")){adjusting=null;commenting=null;renderInbox();return;}
+ const sa=e.target.closest("[data-send-txt]");if(sa&&db){const id=sa.dataset.sendTxt,kind=sa.dataset.kind;const box=$("txt-"+id);const txt=(box&&box.value||"").trim();if(!txt){box&&box.focus();return;}sa.disabled=true;const a=aprov.find(x=>x.id===id);const agora=new Date().toISOString();try{
+   if(kind==="adj"){
+    await db.collection("aprovacoes").doc(id).update({status:"ajuste",comentario:txt,quando:agora});
+    await db.collection("tarefas").add({titulo:"Ajuste pedido em \""+a.titulo+"\": "+txt.slice(0,240),agente:a.agente||"Diretor",resp:"Claude",status:"afazer",criado:agora});
+   }else{
+    await db.collection("aprovacoes").doc(id).update({comentarios:[...(a.comentarios||[]),{texto:txt,quando:agora}]});
+    await db.collection("atividade").add({quando:agora,agente:"Delaine",texto:"Comentou em \""+a.titulo+"\": "+txt.slice(0,160)});
+   }
+   adjusting=null;commenting=null;renderInbox();
+  }catch(_){sa.disabled=false;$("conn").textContent="Não deu para salvar. Tente de novo.";}return;}
  const mv=e.target.closest("[data-mv]");if(mv&&db){mv.disabled=true;try{await db.collection("tarefas").doc(mv.dataset.mv).update({status:mv.dataset.to});}catch(_){mv.disabled=false;}}
 });
 
@@ -350,11 +403,11 @@ function renderAll(){renderTeam();renderBoard();renderAds();renderInbox();}
  if(!sample){$("send").hidden=true;$("sugs").hidden=true;}
  if(!db){$("conn").textContent="Os dados ao vivo não estão disponíveis nesta visualização.";return;}
  $("conn").textContent="Dados ao vivo. Aprovações, checklist e quadro ficam salvos para todos.";
- db.doc("meta/geral").onSnapshot(s=>{lastMeta=s.exists?s.data():null;renderMeta(lastMeta);},()=>{});
+ db.doc("meta/geral").onSnapshot(s=>{lastMeta=s.exists?s.data():null;renderMeta(lastMeta);if(!adjusting&&!commenting)renderInbox();},()=>{});
  db.collection("agentes").onSnapshot(s=>{agents=s.docs.map(d=>d.data());renderTeam();},()=>{});
- db.collection("tarefas").onSnapshot(s=>{tasks=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderTeam();renderBoard();},()=>{});
+ db.collection("tarefas").onSnapshot(s=>{tasks=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderTeam();renderBoard();renderNow();},()=>{});
  db.collection("anuncios").onSnapshot(s=>{ads=s.docs.map(d=>Object.assign({id:d.id},d.data()));renderAds();},()=>{});
- db.collection("aprovacoes").onSnapshot(s=>{aprov=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(!adjusting)renderInbox();},()=>{});
+ db.collection("aprovacoes").onSnapshot(s=>{aprov=s.docs.map(d=>Object.assign({id:d.id},d.data()));if(!adjusting&&!commenting)renderInbox();},()=>{});
  db.collection("kpis").onSnapshot(s=>{kpiList=s.docs.map(d=>d.data());renderKpis(kpiList.slice());},()=>{});
  db.collection("atividade").onSnapshot(s=>renderFeed(s.docs.map(d=>d.data())),()=>{});
 })();
