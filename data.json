@@ -1,5 +1,5 @@
 {
- "atualizado": "12/10/2026 15:28",
+ "atualizado": "12/10/2026 17:39",
  "meta": {
   "campanha_nome": "Campanha Agenda Certa · R$ 297",
   "cpa_alvo": 63,
@@ -88,6 +88,20 @@
    "id": "atendimento"
   },
   {
+   "alinhado": "parcial",
+   "dono_numero": "Hipóteses de percepção testadas (compreensão, checkout, compra)",
+   "icone": "cerebro",
+   "leitura": "Papel novo (Manual V5). Por enquanto roda dentro de Pesquisa de Mercado, até haver demanda própria.",
+   "melhorar": "Entrevistar compradoras e quem abandonou o checkout; nada de neuro-afirmação sem medição.",
+   "nome": "Comportamento",
+   "ordem": 3,
+   "papel": "Pesquisa como o público percebe confiança, competência, clareza e risco, e propõe 3 hipóteses de percepção por produto, com teste de leitura.",
+   "skills": [
+    "joana-copy-infoproduto (pesquisa)"
+   ],
+   "id": "comportamento"
+  },
+  {
    "alinhado": "sim",
    "dono_numero": "CTR e cliques que chegam à página",
    "icone": "pena",
@@ -144,6 +158,20 @@
     "luminar-diretor"
    ],
    "id": "diretor"
+  },
+  {
+   "alinhado": "parcial",
+   "dono_numero": "Página → checkout ≥ 20% e checkout → compra ≥ 20% (meta da Delaine)",
+   "icone": "pagina",
+   "leitura": "Especialista novo (Manual V5). Teria evitado o checkout com o nome de outro produto, a R$ 197.",
+   "melhorar": "Registrar cada versão da página com hipótese e resultado; compra de teste antes de toda campanha.",
+   "nome": "Páginas, UX e CRO",
+   "ordem": 7,
+   "papel": "Constrói e testa a página de vendas: primeira dobra, prova, oferta, checkout, eventos do pixel, UTMs, compra de teste e versões.",
+   "skills": [
+    "luminar-paginas-cro"
+   ],
+   "id": "paginas"
   },
   {
    "alinhado": "sim",
@@ -475,6 +503,41 @@
    "agente": "Editor de Vídeo",
    "resp": "Claude",
    "status": "fazendo"
+  },
+  {
+   "id": "t38",
+   "titulo": "Tirar os números da Metrik das skills e aplicar as metas 20% / 20% / 5–8% e a rotina 30/7/4/3/1",
+   "agente": "Analista de Dados",
+   "resp": "Claude",
+   "status": "feito"
+  },
+  {
+   "id": "t39",
+   "titulo": "Criar a skill Páginas, UX e CRO (checklist da página, tangibilização, registro de versões)",
+   "agente": "Páginas, UX e CRO",
+   "resp": "Claude",
+   "status": "feito"
+  },
+  {
+   "id": "t40",
+   "titulo": "Carrossel nativo de tangibilização (5 telas do app): Revisão aprovou com ajustes; a Delaine confirma as funções mostradas",
+   "agente": "Designer",
+   "resp": "Claude",
+   "status": "aprovacao"
+  },
+  {
+   "id": "t41",
+   "titulo": "Imposto e reembolso esperado (a taxa da Greenn já foi lida: R$ 10,83 por venda, ≈5,5%)",
+   "agente": "Analista de Dados",
+   "resp": "Delaine",
+   "status": "afazer"
+  },
+  {
+   "id": "t42",
+   "titulo": "BLOQUEIO · Cadastrar o pixel no produto 192147 da Greenn e fazer a compra teste (Purchase 1×, 297 BRL)",
+   "agente": "Gestor de Tráfego",
+   "resp": "Cláudio",
+   "status": "afazer"
   }
  ],
  "anuncios": [
@@ -670,12 +733,12 @@
   },
   {
    "agente": "Gestor de Tráfego",
-   "descricao": "1) Conferir o nome do produto dentro do checkout 192147. 2) Tirar o utm_source=organic fixo do link. 3) Compra de teste no celular e conferir o valor 297 no pixel. 4) Pausar as campanhas [PS][VENDAS] antigas.",
+   "descricao": "BLOQUEIO: o produto 192147 está sem pixel na Greenn (Trackeamento: 'Nenhum pixel cadastrado'). 1) Cadastrar o pixel no 192147, com Purchase só na compra aprovada. 2) No checkout, trocar 'Nova oferta / Academia do Trafégo Pago' por Agenda Certa e Delaine Nogueira. 3) Ver de onde vieram as 3 Purchase de 07/10, que correspondem a 1 venda (duplicação). 4) Tirar o utm_source=organic do botão. 5) Decidir entre um pixel próprio e o 'EMPRESARIOS'. 6) Compra teste: o Purchase aparece 1 vez, com 297 BRL. 7) Pausar as [PS][VENDAS] antigas.",
    "ordem": 7,
    "para": "Cláudio",
-   "pergunta": "Aprovar = os 4 itens estão feitos.",
+   "pergunta": "Aprovar = os 7 itens estão feitos e a compra teste passou.",
    "status": "pendente",
-   "titulo": "Pré-voo da campanha",
+   "titulo": "Pré-voo da campanha · checkout validado em 12/10",
    "id": "ap7"
   },
   {
@@ -763,6 +826,30 @@
  ],
  "atividade": [
   {
+   "agente": "Analista de Dados",
+   "quando": "2026-10-12T23:31:00",
+   "texto": "Os R$ 591 são 3 vendas de R$ 197. O líquido foi de R$ 558,51, e a taxa da Greenn é de R$ 10,83 por venda (≈5,5%).",
+   "id": "a28"
+  },
+  {
+   "agente": "Analista de Dados",
+   "quando": "2026-10-12T23:30:00",
+   "texto": "Checkout validado: R$ 297 e pagamentos OK. O produto 192147 está SEM pixel, o nome no checkout está errado e há 3 Purchase para 1 venda em 07/10.",
+   "id": "a27"
+  },
+  {
+   "agente": "Analista de Dados",
+   "quando": "2026-10-12T23:05",
+   "texto": "Metas de conversão da Delaine no perfil: 20% / 20% / 5–8%. CPC máximo de R$ 3,36 para CPA de R$ 84.",
+   "id": "a26"
+  },
+  {
+   "agente": "Atendimento e Vendas",
+   "quando": "2026-10-12T23:00",
+   "texto": "As mensagens de recuperação agora se identificam como equipe: ninguém se passa pela Delaine.",
+   "id": "a25"
+  },
+  {
    "agente": "Diretor",
    "quando": "2026-10-12T22:10",
    "texto": "Central reorganizada: 11 especialistas, abas e caixa de aprovação com botão.",
@@ -809,30 +896,6 @@
    "quando": "2026-10-12T16:55",
    "texto": "Inventário: 472 vídeos achados, 314 com áudio medido, 68 com a Delaine falando. 1 serve direto para saúde.",
    "id": "a18"
-  },
-  {
-   "agente": "Diretor",
-   "quando": "2026-10-12T16:40",
-   "texto": "Ordem de destravamento: 6 passos, cerca de 3 h até a campanha no ar. O primeiro é a Greenn.",
-   "id": "a16"
-  },
-  {
-   "agente": "Produção",
-   "quando": "2026-10-12T16:30",
-   "texto": "3 artes com foto da Delaine (ensaio Delaine 55), aprovadas na auditoria sem erros.",
-   "id": "a15"
-  },
-  {
-   "agente": "Diretor",
-   "quando": "2026-10-12T15:00",
-   "texto": "Vídeo A2 descartado pela Delaine (áudio ruim). Foco em imagem com foto dela e no que já converteu.",
-   "id": "a14"
-  },
-  {
-   "agente": "Diretor",
-   "quando": "2026-10-12T14:00",
-   "texto": "Pacote da campanha R$ 297 entregue para aprovação da Delaine e do Cláudio.",
-   "id": "a13"
   }
  ]
 }
